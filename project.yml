@@ -1,0 +1,54 @@
+name: menu-hider
+options:
+  bundleIdPrefix: com.skycting
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    # Ad-hoc signing builds anywhere. Every ad-hoc rebuild changes the signature and macOS
+    # drops the Accessibility grant, so owners of an Apple certificate should override this:
+    #   make install SIGN_IDENTITY="Developer ID Application" TEAM=XXXXXXXXXX
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    ENABLE_APP_SANDBOX: NO
+targets:
+  MenuHider:
+    type: application
+    platform: macOS
+    sources:
+      - path: MenuHider
+        excludes: ["Resources/Info.plist"]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.skycting.MenuHider
+        PRODUCT_NAME: MenuHider
+        INFOPLIST_FILE: MenuHider/Resources/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  MenuHiderTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [MenuHiderTests]
+    dependencies:
+      - target: MenuHider
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.skycting.MenuHiderTests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MenuHider.app/Contents/MacOS/MenuHider"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+schemes:
+  MenuHider:
+    build:
+      targets:
+        MenuHider: all
+        MenuHiderTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [MenuHiderTests]

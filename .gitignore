@@ -1,0 +1,8 @@
+.orca/
+build/
+dist/
+menu-hider.xcodeproj/
+xcuserdata/
+local.mk
+docs/
+.DS_Store
