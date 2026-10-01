@@ -63,23 +63,24 @@ final class UpdateChecker {
         pending = nil
     }
 
-    /// The daily check. `force` skips both the switch and the interval, which is what the menu's
-    /// own item does.
+    /// The daily check. `force` skips both the switch and the interval. It announces a version the
+    /// first time it sees one, because nobody asked: that alert is the only way the user finds out.
     func check(force: Bool = false) {
         guard !inFlight else { return }
         guard force || isEnabled else { return }
         guard force || isDue else { return scheduleNextCheck() }
         begin()
         Task { [weak self] in
-            _ = await self?.runCheck()
+            _ = await self?.runCheck(announcingNewVersions: true)
         }
     }
 
-    /// The menu's "Check for Updates": same check, but the answer is the point.
+    /// The menu's "Check for Updates": same check, but the answer is the point, so it stays quiet
+    /// and lets the caller show it — otherwise a manual check would raise its alert twice.
     func checkForUser() async -> UpdateOutcome {
         guard !inFlight else { return available.map(UpdateOutcome.available) ?? .upToDate }
         begin()
-        return await runCheck()
+        return await runCheck(announcingNewVersions: false)
     }
 
     /// Stop offering this version. A newer one is still offered later.
@@ -99,14 +100,14 @@ final class UpdateChecker {
         settings.updateCheckLastAt = now()
     }
 
-    private func runCheck() async -> UpdateOutcome {
+    private func runCheck(announcingNewVersions: Bool) async -> UpdateOutcome {
         defer {
             inFlight = false
             scheduleNextCheck()
             onChange?()
         }
         do {
-            adopt(try await feed.latestRelease())
+            adopt(try await feed.latestRelease(), announcing: announcingNewVersions)
             return available.map(UpdateOutcome.available) ?? .upToDate
         } catch {
             let failure = (error as? UpdateError) ?? .badPayload
@@ -115,7 +116,7 @@ final class UpdateChecker {
         }
     }
 
-    private func adopt(_ release: Release) {
+    private func adopt(_ release: Release, announcing: Bool) {
         guard let currentVersion, release.version > currentVersion else {
             Log.update.error("up to date: newest is \(release.version.description, privacy: .public)")
             available = nil
@@ -131,7 +132,7 @@ final class UpdateChecker {
         let isNewSighting = available?.version != release.version
         available = release
         Log.update.error("update available: \(release.version.description, privacy: .public)")
-        if isNewSighting { onFirstSighting?(release) }
+        if announcing, isNewSighting { onFirstSighting?(release) }
     }
 
     private func note(_ failure: UpdateError) {

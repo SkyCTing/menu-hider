@@ -58,6 +58,13 @@ struct Release: Equatable {
         assets.first { $0.name == "MenuHider-\(version).zip" }
             ?? assets.first { $0.name.lowercased().hasSuffix(".zip") }
     }
+
+    /// What people expect to install from. The updater prefers this and falls back to the zip, so a
+    /// release cut before the image existed still updates.
+    var image: ReleaseAsset? {
+        assets.first { $0.name == "MenuHider-\(version).dmg" }
+            ?? assets.first { $0.name.lowercased().hasSuffix(".dmg") }
+    }
 }
 
 /// The parts of GitHub's release payload this app reads. `body` really is optional in the API.

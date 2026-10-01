@@ -64,6 +64,23 @@ final class ReleaseTests: XCTestCase {
         XCTAssertEqual(release.notes, "notes")
     }
 
+    /// The image is what people expect to install from, so the updater hands that over when the
+    /// release carries one.
+    func testTheDiskImageIsPreferredOverTheZip() {
+        let release = release(
+            tag: "v1.1.0", assets: [("MenuHider-1.1.0.zip", 20), ("MenuHider-1.1.0.dmg", 30)])!
+
+        XCTAssertEqual(release.image?.name, "MenuHider-1.1.0.dmg")
+        XCTAssertEqual(release.zip?.name, "MenuHider-1.1.0.zip", "the zip stays the fallback")
+    }
+
+    func testAReleaseWithoutAnImageFallsBackToTheZip() {
+        let release = release(tag: "v1.1.0", assets: [("MenuHider-1.1.0.zip", 20)])!
+
+        XCTAssertNil(release.image)
+        XCTAssertEqual(release.zip?.name, "MenuHider-1.1.0.zip")
+    }
+
     func testAnyOtherZipIsAcceptedAsAFallback() {
         let release = release(tag: "v1.1.0", assets: [("MenuHider.zip", 20), ("checksums.txt", 10)])!
 

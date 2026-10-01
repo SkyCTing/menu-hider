@@ -419,10 +419,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
     }
 
-    private func reportDownloaded(_ app: URL, version: ReleaseVersion) {
+    private func reportDownloaded(_ delivered: URL, version: ReleaseVersion) {
         // Show where it landed: for a menu bar app the alert may be the only thing the user notices.
-        NSWorkspace.shared.activateFileViewerSelecting([app])
-        inform(strings(.downloaded, version.description, app.deletingLastPathComponent().lastPathComponent))
+        NSWorkspace.shared.activateFileViewerSelecting([delivered])
+        // An image has to be opened before it can be dragged from; the zip fallback leaves the app
+        // itself in place, ready to drag.
+        let text: Text = delivered.pathExtension.lowercased() == "dmg" ? .downloadedImage : .downloaded
+        inform(strings(text, version.description, delivered.deletingLastPathComponent().lastPathComponent))
     }
 
     private func reportDownloadFailure(_ error: Error, release: Release) {

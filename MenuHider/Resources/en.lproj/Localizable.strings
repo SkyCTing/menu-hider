@@ -38,12 +38,13 @@
 /* Alerts. */
 
 "alert.update.title" = "MenuHider %@ is available";
-"alert.update.body" = "You have %@. Downloading puts a verified copy in your Downloads folder, and you drag it into Applications yourself.\n\nmacOS asks you to confirm it the first time you open it: these builds are not notarized, so that confirmation is the only check standing in for a signature, and opening the new version asks for the Accessibility permission again.";
+"alert.update.body" = "You have %@. Downloading puts the verified installer image in your Downloads folder, and you drag MenuHider into Applications yourself.\n\nmacOS asks you to confirm it the first time you open it: these builds are not notarized, so that confirmation is the only check standing in for a signature, and opening the new version asks for the Accessibility permission again.";
 "alert.update.download" = "Download";
 "alert.update.later" = "Later";
 "alert.update.skip" = "Skip This Version";
 "alert.upToDate" = "MenuHider %@ is the newest version.";
 "alert.downloaded" = "MenuHider %@ is in %@ — drag it into Applications, replacing the old one.";
+"alert.downloadedImage" = "MenuHider %@ is in %@ — open the disk image and drag MenuHider onto the Applications shortcut, replacing the old one.";
 "alert.downloadFailed" = "The update could not be downloaded";
 "alert.checkFailed" = "The update check failed";
 "alert.openReleasePage" = "Open Release Page";
@@ -55,7 +56,7 @@
 "tooltip.showRightZone" = "The icons between | and ». A click on the » switch does the same.";
 "tooltip.rescan" = "Re-read which icons sit in each zone.";
 "tooltip.checkAutomatically" = "One request a day to api.github.com. This is the only network access MenuHider makes.";
-"tooltip.download" = "Downloads the verified archive to your Downloads folder. macOS asks you to confirm it when you open it.";
+"tooltip.download" = "Downloads the verified disk image to your Downloads folder. macOS asks you to confirm it when you open it.";
 
 /* Spoken by VoiceOver, so they describe the icon rather than name it. */
 

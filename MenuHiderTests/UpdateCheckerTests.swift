@@ -106,16 +106,34 @@ final class UpdateCheckerTests: XCTestCase {
 
     // MARK: - When it checks
 
+    /// The daily check announces a version nobody asked about; the check runs every day, the alert
+    /// does not.
     func testTheFirstSightingIsAnnouncedOnce() async {
         feed.result = .success(makeRelease("v1.0.1"))
         let checker = makeChecker()
         var announcements: [String] = []
         checker.onFirstSighting = { announcements.append($0.version.description) }
 
-        _ = await checker.checkForUser()
+        checker.check()
+        await waitUntil { announcements.count == 1 }
+        checker.check(force: true)
+        await waitUntil { feed.requestCount == 2 }
+
+        XCTAssertEqual(announcements, ["1.0.1"])
+    }
+
+    /// A check the user asked for answers through the menu, so it must not raise its own alert as
+    /// well — that is how one click produced two alerts, and two downloads behind them.
+    func testAManualCheckLeavesTheAnnouncingToTheCaller() async {
+        feed.result = .success(makeRelease("v1.0.1"))
+        let checker = makeChecker()
+        var announcements: [String] = []
+        checker.onFirstSighting = { announcements.append($0.version.description) }
+
         _ = await checker.checkForUser()
 
-        XCTAssertEqual(announcements, ["1.0.1"], "the check runs daily, the alert does not")
+        XCTAssertTrue(announcements.isEmpty)
+        XCTAssertEqual(checker.available?.version.description, "1.0.1", "it is still offered in the menu")
     }
 
     func testTheDailyCheckRunsOnceEveryTwentyFourHours() async {

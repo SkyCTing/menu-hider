@@ -28,10 +28,16 @@ struct UpdateDownloader: UpdateDownloading {
     }
 
     func deliver(_ release: Release, into directory: URL) async throws -> URL {
-        guard let asset = release.zip else { throw UpdateError.missingZip }
         guard FileManager.default.isWritableFile(atPath: directory.path(percentEncoded: false)) else {
             throw UpdateError.destinationNotWritable
         }
+        // The image is what the Releases page hands out, so the updater delivers the same thing
+        // rather than a zip the user then has to know what to do with. A release without an image
+        // still updates through the zip.
+        if let image = release.image {
+            return try await deliver(image: image, version: release.version, into: directory)
+        }
+        guard let asset = release.zip else { throw UpdateError.missingZip }
 
         Log.update.error(
             "downloading \(asset.name, privacy: .public) from \(release.version.description, privacy: .public)")
@@ -61,9 +67,59 @@ struct UpdateDownloader: UpdateDownloading {
         let destination = directory.appending(path: bundle.lastPathComponent)
         try? FileManager.default.removeItem(at: destination)
         try FileManager.default.moveItem(at: bundle, to: destination)
+        // The archive was only ever the wrapper: the app inside it is the deliverable.
+        try? FileManager.default.removeItem(at: archive)
         try quarantine(destination)
         Log.update.error("delivered \(destination.path(percentEncoded: false), privacy: .public)")
         return destination
+    }
+
+    /// The image path: the user gets the same file the Releases page offers, opened by them.
+    private func deliver(image asset: ReleaseAsset, version: ReleaseVersion, into directory: URL) async throws -> URL {
+        Log.update.error("downloading \(asset.name, privacy: .public) from \(version.description, privacy: .public)")
+        let image = try await download(asset, into: directory)
+        try await verifyAppInsideImage(image, expecting: version)
+        try quarantine(image)
+        Log.update.error("delivered \(image.path(percentEncoded: false), privacy: .public)")
+        return image
+    }
+
+    /// Checks the image, then the app inside it, then detaches.
+    ///
+    /// Mounting a downloaded image is the most trusting thing this app does, so the image is
+    /// verified first, mounted read-only, and detached on both the success and the failure path —
+    /// an image left mounted would sit in the user's Finder sidebar and keep the file busy.
+    func verifyAppInsideImage(_ image: URL, expecting version: ReleaseVersion) async throws {
+        guard try await Command.run("/usr/bin/hdiutil", ["verify", image.path(percentEncoded: false)]) else {
+            throw UpdateError.notThisApp("its disk image is damaged")
+        }
+
+        let mountpoint = FileManager.default.temporaryDirectory.appending(path: "MenuHiderImage-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: mountpoint, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: mountpoint) }
+
+        guard
+            try await Command.run(
+                "/usr/bin/hdiutil",
+                [
+                    "attach", image.path(percentEncoded: false), "-nobrowse", "-readonly", "-mountpoint",
+                    mountpoint.path(percentEncoded: false),
+                ])
+        else { throw UpdateError.notThisApp("its disk image could not be opened") }
+
+        let outcome: Result<Void, Error>
+        do {
+            let contents = try FileManager.default.contentsOfDirectory(at: mountpoint, includingPropertiesForKeys: nil)
+            guard let bundle = contents.first(where: { $0.pathExtension == "app" }) else {
+                throw UpdateError.notThisApp("its disk image holds no app")
+            }
+            try await BundleVerifier.verify(bundle, bundleID: AppInfo.bundleID, version: version)
+            outcome = .success(())
+        } catch {
+            outcome = .failure(error)
+        }
+        _ = try? await Command.run("/usr/bin/hdiutil", ["detach", mountpoint.path(percentEncoded: false)])
+        try outcome.get()
     }
 
     private func download(_ asset: ReleaseAsset, into directory: URL) async throws -> URL {

@@ -47,6 +47,7 @@ enum Text: String, CaseIterable {
     case updateSkip = "alert.update.skip"
     case upToDate = "alert.upToDate"
     case downloaded = "alert.downloaded"
+    case downloadedImage = "alert.downloadedImage"
     case downloadFailed = "alert.downloadFailed"
     case checkFailedTitle = "alert.checkFailed"
     case openReleasePage = "alert.openReleasePage"
