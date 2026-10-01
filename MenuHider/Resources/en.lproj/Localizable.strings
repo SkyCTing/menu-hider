@@ -1,0 +1,79 @@
+/* The menu bar switch and its menu. */
+
+"menu.showLeftZone" = "Show Left Zone";
+"menu.showRightZone" = "Show Right Zone";
+"menu.showBothZones" = "Show Both Zones";
+"menu.rescanLayout" = "Rescan Layout";
+"menu.autoHide" = "Auto-hide After";
+"menu.autoHide.never" = "Never";
+"menu.autoHide.5" = "5 seconds";
+"menu.autoHide.10" = "10 seconds";
+"menu.autoHide.30" = "30 seconds";
+"menu.autoHide.60" = "1 minute";
+"menu.launchAtLogin" = "Launch at Login";
+"menu.checkForUpdates" = "Check for Updates";
+"menu.checkAutomatically" = "Check for Updates Automatically";
+"menu.download" = "Download MenuHider %@…";
+"menu.openAccessibility" = "Open Accessibility Settings…";
+"menu.language" = "Language";
+"menu.language.system" = "Follow System";
+"menu.language.english" = "English";
+"menu.language.chinese" = "简体中文";
+"menu.about" = "About MenuHider";
+"menu.quit" = "Quit MenuHider";
+
+/* The status line at the top of the menu. */
+
+"status.allVisible" = "All items visible";
+"status.hiding.one" = "Hiding 1 app (%@)";
+"status.hiding.other" = "Hiding %d apps (%@)";
+"status.zones.left" = "left zone";
+"status.zones.right" = "right zone";
+"status.zones.both" = "left zone + right zone";
+"status.needsAccessibility" = "Accessibility permission required";
+"status.engineUnavailable" = "Hiding unavailable on this macOS build";
+"status.error" = "Error: %@";
+"status.checkFailed" = "Update check failed: %@";
+
+/* Alerts. */
+
+"alert.update.title" = "MenuHider %@ is available";
+"alert.update.body" = "You have %@. Downloading puts a verified copy in your Downloads folder, and you drag it into Applications yourself.\n\nmacOS asks you to confirm it the first time you open it: these builds are not notarized, so that confirmation is the only check standing in for a signature, and opening the new version asks for the Accessibility permission again.";
+"alert.update.download" = "Download";
+"alert.update.later" = "Later";
+"alert.update.skip" = "Skip This Version";
+"alert.upToDate" = "MenuHider %@ is the newest version.";
+"alert.downloaded" = "MenuHider %@ is in %@ — drag it into Applications, replacing the old one.";
+"alert.downloadFailed" = "The update could not be downloaded";
+"alert.checkFailed" = "The update check failed";
+"alert.openReleasePage" = "Open Release Page";
+"alert.ok" = "OK";
+
+/* Tooltips. */
+
+"tooltip.showLeftZone" = "The icons left of the | divider. A two-finger tap on either marker does the same while something is on screen.";
+"tooltip.showRightZone" = "The icons between | and ». A click on the » switch does the same.";
+"tooltip.rescan" = "Re-read which icons sit in each zone.";
+"tooltip.checkAutomatically" = "One request a day to api.github.com. This is the only network access MenuHider makes.";
+"tooltip.download" = "Downloads the verified archive to your Downloads folder. macOS asks you to confirm it when you open it.";
+
+/* Spoken by VoiceOver, so they describe the icon rather than name it. */
+
+"ax.state.collapsed" = "MenuHider: both zones hidden";
+"ax.state.rightShown" = "MenuHider: right zone shown";
+"ax.state.leftShown" = "MenuHider: left zone shown";
+"ax.state.fullyRevealed" = "MenuHider: both zones shown";
+"ax.boundary" = "MenuHider boundary";
+
+/* Why an update check or download did not work. */
+
+"error.offline" = "No network connection.";
+"error.rateLimited" = "GitHub is rate limiting the update check. It will try again later.";
+"error.noRelease" = "The release could not be found.";
+"error.http" = "GitHub answered with HTTP %d.";
+"error.badPayload" = "GitHub's answer could not be read.";
+"error.missingZip" = "That release has no download attached.";
+"error.downloadFailed" = "The download did not finish.";
+"error.notThisApp" = "The download is not a usable MenuHider: %@";
+"error.badSignature" = "The downloaded app's signature is not intact.";
+"error.destinationNotWritable" = "The Downloads folder cannot be written to.";

@@ -55,6 +55,8 @@ switched off.
   revealed just works.
 - **Update check.** Once a day it asks GitHub whether a newer release exists and offers to download
   it. Nothing about you is sent, and it can be turned off from the menu.
+- **English and 简体中文.** The menu picks the language, and the change lands immediately — no
+  relaunch. *Follow System* is the default, so macOS's own per-app language setting works too.
 - **Launch at Login.** Registers with `SMAppService`.
 - **Minimal footprint.** Accessibility permission only — no Screen Recording, no screenshots of
   your menu bar, no telemetry.
@@ -126,6 +128,7 @@ restart. If you dismissed the prompt, ⌃-click `»` and choose *Open Accessibil
 | Download MenuHider x.y.z… | Only while a newer release is known; downloads it to your Downloads folder |
 | Check for Updates | Asks now instead of waiting for the daily check |
 | Check for Updates Automatically | The daily check itself, on by default |
+| Language | Follow System, English or 简体中文 — applied at once |
 | Auto-hide After | Never, 5 seconds, 10 seconds, 30 seconds, 1 minute (10 seconds by default) |
 | Launch at Login | Registers with `SMAppService` |
 | About MenuHider | Opens the repository |
@@ -135,6 +138,9 @@ The zones are recomputed whenever the whole bar is on screen — which is also t
 icons' positions can be read. Reordering icons while everything is revealed, or pressing *Rescan
 Layout*, picks the change up; collapsing from a half-revealed bar reuses the last reading. Apps
 launched while a zone is collapsed stay visible until you move them into a zone.
+
+The interface follows your system language unless you pick one under *Language*; that choice is
+remembered, and it applies to the next time the menu opens rather than at the next launch.
 
 ## Updates
 
@@ -248,6 +254,18 @@ make run      # build and launch from build/
 make install  # build, copy to /Applications, launch
 make release VERSION=1.0.0 NOTE="what changed"   # version → package → commit → tag → push → Release
 ```
+
+### Adding a language
+
+The interface strings live in `MenuHider/Resources/<language>.lproj/Localizable.strings` and are
+declared once in `Text` (`MenuHider/Models/Strings.swift`), so a missing translation is a failing
+test rather than a blank label. One language takes three things:
+
+1. `MenuHider/Resources/<language>.lproj/Localizable.strings` — copy an existing table and translate
+   the values. Keys are checked against `Text.allCases`, and placeholders (`%d`, `%@`) are compared
+   across tables, so a dropped one fails the build.
+2. A case in `Language` with its own `.lproj` name and its own name in itself.
+3. A `README.<language>.md`, linked from the language line at the top of every other README.
 
 ## Feedback
 

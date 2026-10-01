@@ -1,0 +1,79 @@
+/* 菜单栏开关与它的菜单。 */
+
+"menu.showLeftZone" = "显示左区";
+"menu.showRightZone" = "显示右区";
+"menu.showBothZones" = "两块区都展开";
+"menu.rescanLayout" = "重新扫描布局";
+"menu.autoHide" = "自动隐藏";
+"menu.autoHide.never" = "永不";
+"menu.autoHide.5" = "5 秒";
+"menu.autoHide.10" = "10 秒";
+"menu.autoHide.30" = "30 秒";
+"menu.autoHide.60" = "1 分钟";
+"menu.launchAtLogin" = "登录时启动";
+"menu.checkForUpdates" = "检查更新";
+"menu.checkAutomatically" = "自动检查更新";
+"menu.download" = "下载 MenuHider %@…";
+"menu.openAccessibility" = "打开辅助功能设置…";
+"menu.language" = "语言";
+"menu.language.system" = "跟随系统";
+"menu.language.english" = "English";
+"menu.language.chinese" = "简体中文";
+"menu.about" = "关于 MenuHider";
+"menu.quit" = "退出 MenuHider";
+
+/* 菜单顶部的状态行。 */
+
+"status.allVisible" = "全部可见";
+"status.hiding.one" = "正在隐藏 1 个应用（%@）";
+"status.hiding.other" = "正在隐藏 %d 个应用（%@）";
+"status.zones.left" = "左区";
+"status.zones.right" = "右区";
+"status.zones.both" = "左右两区";
+"status.needsAccessibility" = "需要辅助功能权限";
+"status.engineUnavailable" = "此 macOS 版本上无法隐藏";
+"status.error" = "出错：%@";
+"status.checkFailed" = "更新检查失败：%@";
+
+/* 提示窗。 */
+
+"alert.update.title" = "MenuHider %@ 可用";
+"alert.update.body" = "你当前是 %@。下载会把一份校验过的副本放进你的下载文件夹，由你自己拖进应用程序。\n\n首次打开时 macOS 会要你确认一次：这些构建没有公证，那次确认就是代替签名的唯一检查；而打开新版本会重新申请辅助功能权限。";
+"alert.update.download" = "下载";
+"alert.update.later" = "稍后";
+"alert.update.skip" = "跳过这个版本";
+"alert.upToDate" = "MenuHider %@ 已经是最新版本。";
+"alert.downloaded" = "MenuHider %@ 已在%@ —— 把它拖进应用程序，覆盖旧的那份。";
+"alert.downloadFailed" = "更新包没能下载完成";
+"alert.checkFailed" = "更新检查失败";
+"alert.openReleasePage" = "打开发布页面";
+"alert.ok" = "好";
+
+/* 提示气泡。 */
+
+"tooltip.showLeftZone" = "分界线 | 左边的图标。屏幕上已露出东西时，双指点击任一标记等价。";
+"tooltip.showRightZone" = "| 与 » 之间的图标。单击 » 开关等价。";
+"tooltip.rescan" = "重新读取每块区里有哪些图标。";
+"tooltip.checkAutomatically" = "每天向 api.github.com 请求一次。这是 MenuHider 唯一的网络访问。";
+"tooltip.download" = "把校验过的压缩包下载到你的下载文件夹。打开它时 macOS 会要你确认一次。";
+
+/* VoiceOver 朗读用，描述图标状态而非命名。 */
+
+"ax.state.collapsed" = "MenuHider：两块区都已收起";
+"ax.state.rightShown" = "MenuHider：右区已展开";
+"ax.state.leftShown" = "MenuHider：左区已展开";
+"ax.state.fullyRevealed" = "MenuHider：两块区都已展开";
+"ax.boundary" = "MenuHider 分界线";
+
+/* 更新检查或下载失败的原因。 */
+
+"error.offline" = "没有网络连接。";
+"error.rateLimited" = "GitHub 正在限制更新检查的频率，稍后会再试。";
+"error.noRelease" = "没找到对应的发布版本。";
+"error.http" = "GitHub 返回了 HTTP %d。";
+"error.badPayload" = "读不懂 GitHub 的返回内容。";
+"error.missingZip" = "那个发布版本没有附带下载文件。";
+"error.downloadFailed" = "下载没有完成。";
+"error.notThisApp" = "下载下来的不是可用的 MenuHider：%@";
+"error.badSignature" = "下载下来的 app 签名不完整。";
+"error.destinationNotWritable" = "下载文件夹不可写。";

@@ -12,8 +12,8 @@ enum MarkerClick: Equatable {
 /// The two separator icons in the menu bar and the context menu behind them.
 @MainActor
 final class StatusItemController: NSObject, NSMenuDelegate {
-    private static let autoHideChoices: [(seconds: Int, title: String)] = [
-        (0, "Never"), (5, "5 seconds"), (10, "10 seconds"), (30, "30 seconds"), (60, "1 minute"),
+    private static let autoHideChoices: [(seconds: Int, text: Text)] = [
+        (0, .autoHideNever), (5, .autoHide5), (10, .autoHide10), (30, .autoHide30), (60, .autoHide60),
     ]
 
     /// The `»` switch: always on screen, and the only thing that toggles a zone.
@@ -25,15 +25,19 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private var controller: HidingController?
     private var updates: UpdateChecker?
     private var downloader: UpdateDownloading?
+    /// The interface strings, rebuilt when the language changes: the menu is redrawn on every open,
+    /// so the switch takes effect without a relaunch.
+    private var strings: Strings
 
     override init() {
+        strings = Strings(language: Settings.shared.language)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         leftSeparator = NSStatusBar.system.statusItem(withLength: 12)
         super.init()
         menu.delegate = self
         configure(statusItem, autosaveName: "MenuHiderSeparator")
         configure(leftSeparator, autosaveName: "MenuHiderLeftSeparator")
-        leftSeparator.button?.image = Self.boundaryImage()
+        leftSeparator.button?.image = Self.boundaryImage(description: strings(.axBoundary))
         updateIcon(state: .fullyRevealed)
     }
 
@@ -95,11 +99,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func updateIcon(state: HidingController.State) {
         let name = Self.symbolName(for: state)
+        let description = strings(Self.description(for: state))
         // A nil symbol would leave the switch blank and looking dead, so fall back to one that has
         // been in SF Symbols since the first release.
-        let image =
-            Self.symbol(name, description: Self.description(for: state))
-            ?? Self.symbol("chevron.left", description: Self.description(for: state))
+        let image = Self.symbol(name, description: description) ?? Self.symbol("chevron.left", description: description)
         statusItem.button?.image = image
         leftSeparator.isVisible = state.anyRevealed
     }
@@ -115,12 +118,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
     }
 
-    static func description(for state: HidingController.State) -> String {
+    /// Spoken by VoiceOver, so the wording describes the icon's state rather than naming it.
+    static func description(for state: HidingController.State) -> Text {
         switch state {
-        case .collapsed: return "MenuHider: both zones hidden"
-        case .rightRevealed: return "MenuHider: right zone shown"
-        case .leftRevealed: return "MenuHider: left zone shown"
-        case .fullyRevealed: return "MenuHider: both zones shown"
+        case .collapsed: return .axCollapsed
+        case .rightRevealed: return .axRightShown
+        case .leftRevealed: return .axLeftShown
+        case .fullyRevealed: return .axFullyRevealed
         }
     }
 
@@ -147,7 +151,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// The left boundary is drawn instead of taken from SF Symbols: it has to read as a plain
     /// `|`, and no symbol is a bare bar. Template mode lets macOS tint it for light and dark bars.
-    private static func boundaryImage() -> NSImage {
+    private static func boundaryImage(description: String) -> NSImage {
         let image = NSImage(size: NSSize(width: 3, height: 14), flipped: false) { rect in
             // Draw relative to the rect AppKit passes in: it scales with the display, so
             // absolute coordinates would land in a corner of the Retina representation.
@@ -162,7 +166,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             return true
         }
         image.isTemplate = true
-        image.accessibilityDescription = "MenuHider boundary"
+        image.accessibilityDescription = description
         return image
     }
 
@@ -202,41 +206,41 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(header(controller))
         if !controller.isAccessibilityTrusted {
             menu.addItem(
-                item("Open Accessibility Settings…", symbol: "hand.raised", action: #selector(openAccessibility)))
+                item(strings(.openAccessibility), symbol: "hand.raised", action: #selector(openAccessibility)))
         }
         menu.addItem(.separator())
 
-        let left = item("Show Left Zone", symbol: nil, action: #selector(toggleLeft))
+        let left = item(strings(.showLeftZone), symbol: nil, action: #selector(toggleLeft))
         left.state = controller.state.leftRevealed ? .on : .off
-        left.toolTip =
-            "The icons left of the | divider. A two-finger tap on either marker does the same while something is on screen."
+        left.toolTip = strings(.tooltipShowLeftZone)
         menu.addItem(left)
 
-        let right = item("Show Right Zone", symbol: nil, action: #selector(toggleRight))
+        let right = item(strings(.showRightZone), symbol: nil, action: #selector(toggleRight))
         right.state = controller.state.rightRevealed ? .on : .off
-        right.toolTip = "The icons between | and ». A click on the » switch does the same."
+        right.toolTip = strings(.tooltipShowRightZone)
         menu.addItem(right)
 
-        let both = item("Show Both Zones", symbol: "eye", action: #selector(revealAll))
+        let both = item(strings(.showBothZones), symbol: "eye", action: #selector(revealAll))
         both.isEnabled = !controller.state.isFullyRevealed
         menu.addItem(both)
 
-        let rescan = item("Rescan Layout", symbol: "arrow.clockwise", action: #selector(refresh))
-        rescan.toolTip = "Re-read which icons sit in each zone."
+        let rescan = item(strings(.rescanLayout), symbol: "arrow.clockwise", action: #selector(refresh))
+        rescan.toolTip = strings(.tooltipRescan)
         menu.addItem(rescan)
         menu.addItem(.separator())
 
         menu.addItem(autoHideMenu())
-        let login = item("Launch at Login", symbol: nil, action: #selector(toggleLaunchAtLogin))
+        let login = item(strings(.launchAtLogin), symbol: nil, action: #selector(toggleLaunchAtLogin))
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
         menu.addItem(.separator())
 
         addUpdateItems(to: menu)
+        menu.addItem(languageMenu())
         menu.addItem(.separator())
 
-        menu.addItem(item("About MenuHider", symbol: nil, action: #selector(openRepository)))
-        menu.addItem(item("Quit MenuHider", symbol: nil, action: #selector(quit), keyEquivalent: "q"))
+        menu.addItem(item(strings(.about), symbol: nil, action: #selector(openRepository)))
+        menu.addItem(item(strings(.quit), symbol: nil, action: #selector(quit), keyEquivalent: "q"))
     }
 
     /// Built fresh on every open, because the menu is rebuilt from scratch each time and the answer
@@ -246,43 +250,57 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         if let release = updates.available {
             let download = item(
-                "Download MenuHider \(release.version)…", symbol: "arrow.down.circle", action: #selector(downloadUpdate)
-            )
-            download.toolTip =
-                "Downloads the verified archive to your Downloads folder. macOS asks you to confirm it when you open it."
+                strings(.download, release.version.description), symbol: "arrow.down.circle",
+                action: #selector(downloadUpdate))
+            download.toolTip = strings(.tooltipDownload)
             menu.addItem(download)
         } else if let error = updates.lastError {
-            let failed = item(
-                "Update check failed: \(error.errorDescription ?? "unknown error")", symbol: nil, action: nil)
+            let failed = item(strings(.checkFailed, strings.message(for: error)), symbol: nil, action: nil)
             failed.isEnabled = false
             menu.addItem(failed)
         }
 
-        menu.addItem(item("Check for Updates", symbol: nil, action: #selector(checkForUpdates)))
+        menu.addItem(item(strings(.checkForUpdates), symbol: nil, action: #selector(checkForUpdates)))
 
-        let automatic = item("Check for Updates Automatically", symbol: nil, action: #selector(toggleUpdateCheck))
+        let automatic = item(strings(.checkAutomatically), symbol: nil, action: #selector(toggleUpdateCheck))
         automatic.state = updates.isEnabled ? .on : .off
-        automatic.toolTip = "One request a day to api.github.com. This is the only network access MenuHider makes."
+        automatic.toolTip = strings(.tooltipCheckAutomatically)
         menu.addItem(automatic)
+    }
+
+    /// A language is always named in itself, whatever the interface is currently in, so nobody has
+    /// to find their own language written in one they cannot read.
+    private func languageMenu() -> NSMenuItem {
+        let parent = item(strings(.language), symbol: "globe", action: nil)
+        let submenu = NSMenu()
+        for language in Language.allCases {
+            let entry = item(language.name, symbol: nil, action: #selector(setLanguage(_:)))
+            entry.representedObject = language.rawValue
+            entry.state = controller?.settings.language == language ? .on : .off
+            submenu.addItem(entry)
+        }
+        parent.submenu = submenu
+        return parent
     }
 
     private func header(_ controller: HidingController) -> NSMenuItem {
         let status: String
         let symbol: String
         if !controller.isEngineAvailable {
-            status = "Hiding unavailable on this macOS build"
+            status = strings(.engineUnavailable)
             symbol = "exclamationmark.triangle"
         } else if !controller.isAccessibilityTrusted {
-            status = "Accessibility permission required"
+            status = strings(.needsAccessibility)
             symbol = "exclamationmark.triangle"
         } else if let error = controller.lastError {
-            status = "Error: \(error.localizedDescription)"
+            status = strings(.error, error.localizedDescription)
             symbol = "exclamationmark.triangle"
         } else if controller.hiddenCount == 0 {
-            status = "All items visible"
+            status = strings(.allVisible)
             symbol = "eye"
         } else {
-            status = "Hiding \(controller.hiddenCount) apps\(collapsedZones(controller))"
+            let count = controller.hiddenCount
+            status = strings(count == 1 ? .hidingOne : .hidingOther, count, collapsedZones(controller))
             symbol = "eye.slash"
         }
         let line = item(status, symbol: symbol, action: nil)
@@ -290,21 +308,26 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         return line
     }
 
-    /// Names the zones the count comes from, so a half-collapsed bar is not a mystery.
+    /// Names the zones the count comes from, so a half-collapsed bar is not a mystery. One whole
+    /// phrase per case rather than pieces joined with a separator: the pieces would not survive
+    /// translation.
     private func collapsedZones(_ controller: HidingController) -> String {
         let zones = controller.zones
-        let names = [
-            !controller.state.leftRevealed && !zones.left.isEmpty ? "left zone" : nil,
-            !controller.state.rightRevealed && !zones.right.isEmpty ? "right zone" : nil,
-        ].compactMap { $0 }
-        return names.isEmpty ? "" : " (\(names.joined(separator: " + ")))"
+        let left = !controller.state.leftRevealed && !zones.left.isEmpty
+        let right = !controller.state.rightRevealed && !zones.right.isEmpty
+        switch (left, right) {
+        case (true, true): return strings(.zonesBoth)
+        case (true, false): return strings(.zonesLeft)
+        case (false, true): return strings(.zonesRight)
+        case (false, false): return ""
+        }
     }
 
     private func autoHideMenu() -> NSMenuItem {
-        let parent = item("Auto-hide After", symbol: "timer", action: nil)
+        let parent = item(strings(.autoHide), symbol: "timer", action: nil)
         let submenu = NSMenu()
         for choice in Self.autoHideChoices {
-            let entry = item(choice.title, symbol: nil, action: #selector(setAutoHide(_:)))
+            let entry = item(strings(choice.text), symbol: nil, action: #selector(setAutoHide(_:)))
             entry.tag = choice.seconds
             entry.state = controller?.settings.autoHideSeconds == choice.seconds ? .on : .off
             submenu.addItem(entry)
@@ -372,16 +395,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     /// The one alert the daily check may raise, and only the first time a version is seen.
     private func announce(_ release: Release) {
         let response = alert(
-            "MenuHider \(release.version) is available",
-            """
-            You have \(AppInfo.version). Downloading puts a verified copy in your Downloads folder, \
-            and you drag it into Applications yourself.
-
-            macOS asks you to confirm it the first time you open it: these builds are not notarized, \
-            so that confirmation is the only check standing in for a signature, and opening the new \
-            version asks for the Accessibility permission again.
-            """,
-            buttons: ["Download", "Later", "Skip This Version"])
+            strings(.updateTitle, release.version.description),
+            strings(.updateBody, AppInfo.version),
+            buttons: [strings(.updateDownload), strings(.updateLater), strings(.updateSkip)])
         switch response {
         case .alertFirstButtonReturn: downloadUpdate()
         case .alertThirdButtonReturn: updates?.skip()
@@ -392,13 +408,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private func report(_ outcome: UpdateOutcome, from updates: UpdateChecker) {
         switch outcome {
         case .upToDate:
-            inform("MenuHider \(AppInfo.version) is the newest version.")
+            inform(strings(.upToDate, AppInfo.version))
         case .available(let release):
             announce(release)
         case .failed(let error):
             let response = alert(
-                "The update check failed", error.errorDescription ?? "unknown error",
-                buttons: ["OK", "Open Release Page"])
+                strings(.checkFailedTitle), strings.message(for: error),
+                buttons: [strings(.ok), strings(.openReleasePage)])
             if response == .alertSecondButtonReturn { NSWorkspace.shared.open(AppInfo.repositoryURL) }
         }
     }
@@ -406,15 +422,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private func reportDownloaded(_ app: URL, version: ReleaseVersion) {
         // Show where it landed: for a menu bar app the alert may be the only thing the user notices.
         NSWorkspace.shared.activateFileViewerSelecting([app])
-        inform(
-            "MenuHider \(version) is in \(app.deletingLastPathComponent().lastPathComponent) — drag it into Applications, replacing the old one."
-        )
+        inform(strings(.downloaded, version.description, app.deletingLastPathComponent().lastPathComponent))
     }
 
     private func reportDownloadFailure(_ error: Error, release: Release) {
-        let detail = (error as? UpdateError)?.errorDescription ?? error.localizedDescription
+        let detail = (error as? UpdateError).map { strings.message(for: $0) } ?? error.localizedDescription
         Log.update.error("download failed: \(String(describing: error), privacy: .public)")
-        let response = alert("The update could not be downloaded", detail, buttons: ["OK", "Open Release Page"])
+        let response = alert(
+            strings(.downloadFailed), detail, buttons: [strings(.ok), strings(.openReleasePage)])
         if response == .alertSecondButtonReturn { NSWorkspace.shared.open(release.pageURL) }
     }
 
@@ -430,7 +445,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func inform(_ body: String) {
-        _ = alert("MenuHider", body, buttons: ["OK"])
+        _ = alert("MenuHider", body, buttons: [strings(.ok)])
+    }
+
+    @objc private func setLanguage(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String, let language = Language(rawValue: raw) else { return }
+        controller?.settings.language = language
+        strings = Strings(language: language)
+        Log.ui.error("language → \(language.rawValue, privacy: .public)")
+        // The menu is rebuilt on its next open, and the icon's spoken description follows now.
+        stateChanged()
     }
 
     private static func downloadsDirectory() -> URL {

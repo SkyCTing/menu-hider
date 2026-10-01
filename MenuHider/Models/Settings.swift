@@ -15,11 +15,20 @@ final class Settings {
         static let updateCheckEnabled = "updateCheckEnabled"
         static let updateCheckLastAt = "updateCheckLastAt"
         static let skippedUpdateVersion = "skippedUpdateVersion"
+        static let language = "language"
     }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.register(defaults: [Key.autoHideSeconds: 10, Key.updateCheckEnabled: true])
+        defaults.register(defaults: [
+            Key.autoHideSeconds: 10, Key.updateCheckEnabled: true, Key.language: Language.system.rawValue,
+        ])
+    }
+
+    /// The interface language, defaulting to whatever macOS is set to.
+    var language: Language {
+        get { Language(rawValue: defaults.string(forKey: Key.language) ?? "") ?? .system }
+        set { defaults.set(newValue.rawValue, forKey: Key.language) }
     }
 
     /// The daily update check is the only network request this app makes, so it stays switchable.
