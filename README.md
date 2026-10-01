@@ -31,7 +31,8 @@ tap opens the menu instead.
 ```
 
 No Screen Recording permission, no screenshots of your menu bar, no telemetry. Accessibility is
-the only permission it asks for.
+the only permission it asks for, and the one request it makes is a daily update check, which can be
+switched off.
 
 ## Features
 
@@ -52,6 +53,8 @@ the only permission it asks for.
   unloaded with the zone they sit in and loaded back when that zone is revealed.
 - **Rescan Layout.** Re-reads which icons sit in each zone, so reordering icons while everything is
   revealed just works.
+- **Update check.** Once a day it asks GitHub whether a newer release exists and offers to download
+  it. Nothing about you is sent, and it can be turned off from the menu.
 - **Launch at Login.** Registers with `SMAppService`.
 - **Minimal footprint.** Accessibility permission only — no Screen Recording, no screenshots of
   your menu bar, no telemetry.
@@ -118,6 +121,9 @@ restart. If you dismissed the prompt, ⌃-click `»` and choose *Open Accessibil
 | Show Right Zone | Same as a click on `»` |
 | Show Both Zones | Every icon on the bar at once |
 | Rescan Layout | Re-read which icons sit in each zone |
+| Download MenuHider x.y.z… | Only while a newer release is known; downloads it to your Downloads folder |
+| Check for Updates | Asks now instead of waiting for the daily check |
+| Check for Updates Automatically | The daily check itself, on by default |
 | Auto-hide After | Never, 5 seconds, 10 seconds, 30 seconds, 1 minute (10 seconds by default) |
 | Launch at Login | Registers with `SMAppService` |
 | About MenuHider | Opens the repository |
@@ -127,6 +133,27 @@ The zones are recomputed whenever the whole bar is on screen — which is also t
 icons' positions can be read. Reordering icons while everything is revealed, or pressing *Rescan
 Layout*, picks the change up; collapsing from a half-revealed bar reuses the last reading. Apps
 launched while a zone is collapsed stay visible until you move them into a zone.
+
+## Updates
+
+Once a day — at launch if a day has gone by, and every 24 hours while it runs — MenuHider asks
+`api.github.com` for the newest release. Nothing about you is sent, no identifier is included, and
+*Check for Updates Automatically* turns the whole thing off.
+
+When a newer release turns up, the menu offers *Download MenuHider x.y.z…*, and the first time it is
+seen an alert says the same. Downloading puts a copy in your Downloads folder after checking that it
+is this app, that it is the version the release claims, and that its signature is intact: the
+archive is unpacked with `ditto`, which keeps the signature readable, and checked with
+`codesign --verify --strict` — never `spctl`, because an ad-hoc build fails Gatekeeper assessment by
+design and asking it would reject legitimate updates.
+
+These builds are not notarized, so **nothing can prove who published the download**: those checks
+prove it has not changed since it was signed, not that we signed it. That is why MenuHider never
+replaces its own bundle. It marks the download as coming from the internet, exactly as a browser
+would, and leaves the OS's own confirmation and the drag into Applications to you.
+
+Opening the new version asks for the Accessibility permission again, because macOS ties the grant to
+the signature and every build has a different one.
 
 ## How it works
 

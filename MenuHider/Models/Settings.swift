@@ -12,11 +12,32 @@ final class Settings {
         static let hiddenBundleIDs = "hiddenBundleIDs"
         static let hiddenLeftBundleIDs = "hiddenLeftBundleIDs"
         static let removedMenuExtraIDs = "removedMenuExtraIDs"
+        static let updateCheckEnabled = "updateCheckEnabled"
+        static let updateCheckLastAt = "updateCheckLastAt"
+        static let skippedUpdateVersion = "skippedUpdateVersion"
     }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.register(defaults: [Key.autoHideSeconds: 10])
+        defaults.register(defaults: [Key.autoHideSeconds: 10, Key.updateCheckEnabled: true])
+    }
+
+    /// The daily update check is the only network request this app makes, so it stays switchable.
+    var updateCheckEnabled: Bool {
+        get { defaults.bool(forKey: Key.updateCheckEnabled) }
+        set { defaults.set(newValue, forKey: Key.updateCheckEnabled) }
+    }
+
+    /// Persisted so relaunching often does not mean asking GitHub often.
+    var updateCheckLastAt: Date? {
+        get { defaults.object(forKey: Key.updateCheckLastAt) as? Date }
+        set { defaults.set(newValue, forKey: Key.updateCheckLastAt) }
+    }
+
+    /// A version the user does not want to hear about again. A newer one still gets mentioned.
+    var skippedUpdateVersion: String? {
+        get { defaults.string(forKey: Key.skippedUpdateVersion) }
+        set { defaults.set(newValue, forKey: Key.skippedUpdateVersion) }
     }
 
     /// 0 disables the auto-hide timer.

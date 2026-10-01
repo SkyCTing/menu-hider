@@ -38,6 +38,16 @@ final class FakeRunning: RunningAppsSource {
     var bundleIDs: [String] = []
 }
 
+final class FakeReleaseFeed: ReleaseFetching {
+    var result: Result<Release, Error> = .failure(UpdateError.offline)
+    private(set) var requestCount = 0
+
+    func latestRelease() async throws -> Release {
+        requestCount += 1
+        return try result.get()
+    }
+}
+
 final class FakeExtras: MenuExtraHost {
     var loaded: [String] = []
     var removals: [String] = []

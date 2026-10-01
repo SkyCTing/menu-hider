@@ -6,4 +6,5 @@ enum Log {
     static let ui = Logger(subsystem: subsystem, category: "ui")
     static let controller = Logger(subsystem: subsystem, category: "controller")
     static let bridge = Logger(subsystem: subsystem, category: "bridge")
+    static let update = Logger(subsystem: subsystem, category: "update")
 }

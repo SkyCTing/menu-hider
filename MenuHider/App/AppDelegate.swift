@@ -23,6 +23,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         statusItem.attach(controller)
 
+        let updates = UpdateChecker(
+            feed: GitHubReleases(), settings: Settings.shared, scheduler: DispatchTimerScheduler())
+        statusItem.attachUpdates(updates, downloader: UpdateDownloader())
+
         // Relevant while already over the clock too: an auto-hide can fire under a resting pointer.
         hoverMonitor = ClockHoverMonitor { [weak controller] in
             guard let controller else { return false }
@@ -44,6 +48,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         controller.start()
+        // The check is a no-op unless the last one is a day old, and stays quiet about failures.
+        updates.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

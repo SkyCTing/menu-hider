@@ -12,7 +12,6 @@ enum MarkerClick: Equatable {
 /// The two separator icons in the menu bar and the context menu behind them.
 @MainActor
 final class StatusItemController: NSObject, NSMenuDelegate {
-    private static let repositoryURL = URL(string: "https://github.com/SkyCTing/menu-hider")!
     private static let autoHideChoices: [(seconds: Int, title: String)] = [
         (0, "Never"), (5, "5 seconds"), (10, "10 seconds"), (30, "30 seconds"), (60, "1 minute"),
     ]
@@ -24,6 +23,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let leftSeparator: NSStatusItem
     private let menu = NSMenu()
     private var controller: HidingController?
+    private var updates: UpdateChecker?
+    private var downloader: UpdateDownloading?
 
     override init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -38,6 +39,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     func attach(_ controller: HidingController) {
         self.controller = controller
+    }
+
+    /// The update check and the downloader behind its menu items. The alert is the controller's
+    /// business: a menu bar app has to come forward before it can show one.
+    func attachUpdates(_ updates: UpdateChecker, downloader: UpdateDownloading) {
+        self.updates = updates
+        self.downloader = downloader
+        updates.onFirstSighting = { [weak self] release in self?.announce(release) }
     }
 
     func stateChanged() {
@@ -223,8 +232,38 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(login)
         menu.addItem(.separator())
 
+        addUpdateItems(to: menu)
+        menu.addItem(.separator())
+
         menu.addItem(item("About MenuHider", symbol: nil, action: #selector(openRepository)))
         menu.addItem(item("Quit MenuHider", symbol: nil, action: #selector(quit), keyEquivalent: "q"))
+    }
+
+    /// Built fresh on every open, because the menu is rebuilt from scratch each time and the answer
+    /// to "is there an update" changes under it.
+    private func addUpdateItems(to menu: NSMenu) {
+        guard let updates else { return }
+
+        if let release = updates.available {
+            let download = item(
+                "Download MenuHider \(release.version)…", symbol: "arrow.down.circle", action: #selector(downloadUpdate)
+            )
+            download.toolTip =
+                "Downloads the verified archive to your Downloads folder. macOS asks you to confirm it when you open it."
+            menu.addItem(download)
+        } else if let error = updates.lastError {
+            let failed = item(
+                "Update check failed: \(error.errorDescription ?? "unknown error")", symbol: nil, action: nil)
+            failed.isEnabled = false
+            menu.addItem(failed)
+        }
+
+        menu.addItem(item("Check for Updates", symbol: nil, action: #selector(checkForUpdates)))
+
+        let automatic = item("Check for Updates Automatically", symbol: nil, action: #selector(toggleUpdateCheck))
+        automatic.state = updates.isEnabled ? .on : .off
+        automatic.toolTip = "One request a day to api.github.com. This is the only network access MenuHider makes."
+        menu.addItem(automatic)
     }
 
     private func header(_ controller: HidingController) -> NSMenuItem {
@@ -304,6 +343,101 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
     }
 
+    // MARK: - Updates
+
+    @objc private func checkForUpdates() {
+        Task { [weak self] in
+            guard let self, let updates = self.updates else { return }
+            self.report(await updates.checkForUser(), from: updates)
+        }
+    }
+
+    @objc private func toggleUpdateCheck() {
+        updates?.isEnabled.toggle()
+    }
+
+    @objc private func downloadUpdate() {
+        guard let release = updates?.available, let downloader else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let app = try await downloader.deliver(release, into: Self.downloadsDirectory())
+                self.reportDownloaded(app, version: release.version)
+            } catch {
+                self.reportDownloadFailure(error, release: release)
+            }
+        }
+    }
+
+    /// The one alert the daily check may raise, and only the first time a version is seen.
+    private func announce(_ release: Release) {
+        let response = alert(
+            "MenuHider \(release.version) is available",
+            """
+            You have \(AppInfo.version). Downloading puts a verified copy in your Downloads folder, \
+            and you drag it into Applications yourself.
+
+            macOS asks you to confirm it the first time you open it: these builds are not notarized, \
+            so that confirmation is the only check standing in for a signature, and opening the new \
+            version asks for the Accessibility permission again.
+            """,
+            buttons: ["Download", "Later", "Skip This Version"])
+        switch response {
+        case .alertFirstButtonReturn: downloadUpdate()
+        case .alertThirdButtonReturn: updates?.skip()
+        default: break
+        }
+    }
+
+    private func report(_ outcome: UpdateOutcome, from updates: UpdateChecker) {
+        switch outcome {
+        case .upToDate:
+            inform("MenuHider \(AppInfo.version) is the newest version.")
+        case .available(let release):
+            announce(release)
+        case .failed(let error):
+            let response = alert(
+                "The update check failed", error.errorDescription ?? "unknown error",
+                buttons: ["OK", "Open Release Page"])
+            if response == .alertSecondButtonReturn { NSWorkspace.shared.open(AppInfo.repositoryURL) }
+        }
+    }
+
+    private func reportDownloaded(_ app: URL, version: ReleaseVersion) {
+        // Show where it landed: for a menu bar app the alert may be the only thing the user notices.
+        NSWorkspace.shared.activateFileViewerSelecting([app])
+        inform(
+            "MenuHider \(version) is in \(app.deletingLastPathComponent().lastPathComponent) — drag it into Applications, replacing the old one."
+        )
+    }
+
+    private func reportDownloadFailure(_ error: Error, release: Release) {
+        let detail = (error as? UpdateError)?.errorDescription ?? error.localizedDescription
+        Log.update.error("download failed: \(String(describing: error), privacy: .public)")
+        let response = alert("The update could not be downloaded", detail, buttons: ["OK", "Open Release Page"])
+        if response == .alertSecondButtonReturn { NSWorkspace.shared.open(release.pageURL) }
+    }
+
+    /// A menu bar app has no Dock icon and is never frontmost, so it has to come forward before an
+    /// alert can be seen at all.
+    private func alert(_ title: String, _ body: String, buttons: [String]) -> NSApplication.ModalResponse {
+        NSApp.activate()
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = body
+        for button in buttons { alert.addButton(withTitle: button) }
+        return alert.runModal()
+    }
+
+    private func inform(_ body: String) {
+        _ = alert("MenuHider", body, buttons: ["OK"])
+    }
+
+    private static func downloadsDirectory() -> URL {
+        FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads")
+    }
+
     @objc private func openAccessibility() {
         MenuBarScanner.requestTrust()
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
@@ -312,7 +446,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     @objc private func openRepository() {
-        NSWorkspace.shared.open(Self.repositoryURL)
+        NSWorkspace.shared.open(AppInfo.repositoryURL)
     }
 
     @objc private func quit() {
