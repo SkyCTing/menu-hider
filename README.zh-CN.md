@@ -44,7 +44,7 @@ MenuHider 常驻菜单栏，不显示 Dock 图标；隐藏图标不会退出对�
 
 ## 安装
 
-从 [Releases](https://github.com/SkyCTing/menu-hider/releases/latest) 下载 `MenuHider-x.y.z.zip`，解压后将 **MenuHider.app** 拖入 **应用程序** 文件夹。
+从 [Releases](https://github.com/SkyCTing/menu-hider/releases/latest) 下载 `MenuHider-x.y.z.dmg`，打开后把 **MenuHider** 拖到旁边的"应用程序"快捷方式上。同一页也附了 `.zip` —— 那是应用内更新检查替你下载的那一份。
 
 发布版本是 ad-hoc 签名、未公证，所以首次打开需要在访达里右键 → *打开*（或到 *系统设置 → 隐私与安全性* 里选"仍要打开"）。macOS 把辅助功能授权绑在签名上，因此**每次更新后都要重新授权一次** —— 重新授权只要一秒，但如果列表里那条还亮着却无效，先用减号移除再加回来。
 
@@ -54,7 +54,7 @@ MenuHider 常驻菜单栏，不显示 Dock 图标；隐藏图标不会退出对�
 
 ### 从源码构建
 
-需要 Xcode 26.3 或更高版本，以及 [xcodegen](https://github.com/yonaskolb/XcodeGen)。
+需要 Xcode 26.3 或更高版本、[xcodegen](https://github.com/yonaskolb/XcodeGen)，以及 —— 仅打包安装镜像时需要 —— [create-dmg](https://github.com/create-dmg/create-dmg)（`brew install create-dmg`）。
 
 ```bash
 brew install xcodegen

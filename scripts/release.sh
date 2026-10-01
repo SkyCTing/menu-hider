@@ -129,6 +129,39 @@ fi
 echo "✅ packaged $ZIP"
 shasum -a 256 "$ZIP"
 
+# ── Installer image
+# The zip stays: the in-app updater downloads and unpacks it, and it takes the asset named
+# MenuHider-<version>.zip. The image is for people who arrive at the Releases page.
+#
+# create-dmg writes the window size, the icon positions and the Applications drop link into the
+# image's .DS_Store, which is what makes it open as a drag-and-drop diagram. Bare hdiutil gives a
+# folder that works but explains nothing.
+command -v create-dmg >/dev/null 2>&1 || die "create-dmg is missing — install it with
+   brew install create-dmg
+   (the zip above is packaged and usable; only the installer image needs it)"
+DMG="dist/MenuHider-${VERSION}.dmg"
+rm -f "$DMG"   # create-dmg refuses to overwrite
+create-dmg \
+    --volname "MenuHider" \
+    --window-pos 200 120 \
+    --window-size 600 420 \
+    --icon-size 128 \
+    --icon "MenuHider.app" 150 210 \
+    --hide-extension "MenuHider.app" \
+    --app-drop-link 450 210 \
+    --no-internet-enable \
+    "$DMG" "$APP" >/dev/null || die "create-dmg failed"
+[ -f "$DMG" ] || die "no $DMG"
+if [ "$SIGNING" = "notarized" ]; then
+    # The image needs its own ticket: Gatekeeper assesses the image the user opens, and the app's
+    # ticket inside it cannot be stapled to the image afterwards.
+    xcrun notarytool submit "$DMG" --keychain-profile "$PROFILE" --wait 2>&1 | tee dist/notarize-dmg.log
+    grep -q 'status: Accepted' dist/notarize-dmg.log || die "DMG notarization failed, see dist/notarize-dmg.log"
+    xcrun stapler staple "$DMG"
+fi
+echo "✅ packaged $DMG"
+shasum -a 256 "$DMG"
+
 # ── Commit + tag
 # --allow-empty: the version may already be the target one (bumped by hand, or a release that
 # was packaged but never published). `git commit` would then exit non-zero with "nothing to
@@ -154,7 +187,7 @@ it — open it from Finder with a right click → *Open*, or allow it in *System
 Security*. It also asks for the Accessibility permission again after each update."
 fi
 
-if ! gh release create "${TAG}" "$ZIP" --title "MenuHider ${VERSION}" --notes "$NOTES"; then
+if ! gh release create "${TAG}" "$ZIP" "$DMG" --title "MenuHider ${VERSION}" --notes "$NOTES"; then
     cat >&2 <<'MSG'
 
 ❌ The Release was not created.

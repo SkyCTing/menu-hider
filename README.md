@@ -63,8 +63,9 @@ MenuHider lives in the menu bar with no Dock icon, and hiding an icon does not q
 
 ## Installation
 
-Download `MenuHider-x.y.z.zip` from [Releases](https://github.com/SkyCTing/menu-hider/releases/latest),
-unzip it and drag **MenuHider.app** to **Applications**.
+Download `MenuHider-x.y.z.dmg` from [Releases](https://github.com/SkyCTing/menu-hider/releases/latest),
+open it and drag **MenuHider** onto the Applications shortcut beside it. A `.zip` is attached as
+well: that is the copy the built-in update check downloads for you.
 
 The build is ad-hoc signed rather than notarized, so the first launch needs a right click → *Open*
 in Finder, or *System Settings → Privacy & Security → Open Anyway*. macOS ties the Accessibility
@@ -78,7 +79,8 @@ that the menu reports *Hiding unavailable on this macOS build* and nothing else 
 
 ### Build from source
 
-Needs Xcode 26.3 or newer and [xcodegen](https://github.com/yonaskolb/XcodeGen).
+Needs Xcode 26.3 or newer, [xcodegen](https://github.com/yonaskolb/XcodeGen), and — for the
+installer image only — [create-dmg](https://github.com/create-dmg/create-dmg) (`brew install create-dmg`).
 
 ```bash
 brew install xcodegen
